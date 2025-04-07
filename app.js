@@ -84,3 +84,59 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 });
+// Configuración de notificaciones push
+function initializeFirebaseMessaging() {
+    const messaging = firebase.messaging();
+    
+    // Solicitar permiso para notificaciones
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            console.log('Permission granted');
+            getToken();
+        } else {
+            console.log('Permission denied');
+        }
+    }).catch((error) => {
+        console.error("Error requesting permission:", error);
+    });
+    
+    // Obtener token de FCM
+    function getToken() {
+        messaging.getToken({ vapidKey: 'TU_VAPID_KEY' }).then((currentToken) => {
+            if (currentToken) {
+                // Guardar token en Firestore para el usuario actual
+                const userId = firebase.auth().currentUser.uid;
+                if (userId) {
+                    db.collection('users').doc(userId).update({
+                        fcmToken: currentToken
+                    });
+                }
+            } else {
+                console.log('No registration token available.');
+            }
+        }).catch((error) => {
+            console.error('Error getting token:', error);
+        });
+    }
+    
+    // Escuchar mensajes en primer plano
+    messaging.onMessage((payload) => {
+        console.log('Message received:', payload);
+        const notificationTitle = payload.notification.title;
+        const notificationOptions = {
+            body: payload.notification.body,
+            icon: payload.notification.icon
+        };
+        
+        if (Notification.permission === 'granted') {
+            new Notification(notificationTitle, notificationOptions);
+        }
+    });
+}
+
+// Llamar a la función después de que el usuario inicie sesión
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        initializeFirebaseMessaging();
+    }
+});
