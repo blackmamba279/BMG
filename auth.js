@@ -1,5 +1,5 @@
-// Manejo de autenticación
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del DOM
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const googleLogin = document.getElementById('googleLogin');
@@ -14,43 +14,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const catalogContainer = document.getElementById('catalogContainer');
 
     // Mostrar/ocultar formularios
-    showEmailLogin.addEventListener('click', () => {
+    showEmailLogin.addEventListener('click', function(e) {
+        e.preventDefault();
         emailLoginForm.classList.remove('d-none');
         showEmailLogin.classList.add('d-none');
     });
 
-    showRegister.addEventListener('click', () => {
+    showRegister.addEventListener('click', function(e) {
+        e.preventDefault();
         emailLoginForm.classList.add('d-none');
         registerForm.classList.remove('d-none');
     });
 
-    showLogin.addEventListener('click', () => {
+    showLogin.addEventListener('click', function(e) {
+        e.preventDefault();
         registerForm.classList.add('d-none');
         emailLoginForm.classList.remove('d-none');
     });
 
     // Iniciar sesión con Google
-    googleLogin.addEventListener('click', () => {
+    googleLogin.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
-                // Usuario autenticado
-                checkAdminStatus(result.user.uid);
+                // Verificar si el usuario ya existe
+                return db.collection('users').doc(result.user.uid).get()
+                    .then((doc) => {
+                        if (!doc.exists) {
+                            // Crear nuevo usuario si no existe
+                            return db.collection('users').doc(result.user.uid).set({
+                                name: result.user.displayName,
+                                email: result.user.email,
+                                isAdmin: false,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    });
+            })
+            .then(() => {
+                checkAdminStatus(firebase.auth().currentUser.uid);
             })
             .catch((error) => {
                 console.error("Error en autenticación con Google:", error);
-                alert("Error al iniciar sesión con Google");
+                alert("Error al iniciar sesión con Google: " + error.message);
             });
     });
 
     // Iniciar sesión con email y contraseña
-    emailLogin.addEventListener('click', () => {
+    emailLogin.addEventListener('click', function() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
+        if (!email || !password) {
+            alert("Por favor ingrese correo y contraseña");
+            return;
+        }
+        
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                // Usuario autenticado
                 checkAdminStatus(userCredential.user.uid);
             })
             .catch((error) => {
@@ -60,10 +81,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Registro de nuevo usuario
-    registerBtn.addEventListener('click', () => {
+    registerBtn.addEventListener('click', function() {
         const name = document.getElementById('registerName').value;
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
+        
+        if (!name || !email || !password) {
+            alert("Por favor complete todos los campos");
+            return;
+        }
+        
+        if (password.length < 6) {
+            alert("La contraseña debe tener al menos 6 caracteres");
+            return;
+        }
         
         firebase.auth().createUserWithEmailAndPassword(email, password)
             .then((userCredential) => {
@@ -79,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Registro exitoso. Ahora puedes iniciar sesión.");
                 registerForm.classList.add('d-none');
                 emailLoginForm.classList.remove('d-none');
+                document.getElementById('registerForm').reset();
             })
             .catch((error) => {
                 console.error("Error en registro:", error);
@@ -86,51 +118,4 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    // Cerrar sesión
-    logoutBtn.addEventListener('click', () => {
-        firebase.auth().signOut()
-            .then(() => {
-                authContainer.classList.remove('d-none');
-                catalogContainer.classList.add('d-none');
-                loginBtn.classList.remove('d-none');
-                logoutBtn.classList.add('d-none');
-            })
-            .catch((error) => {
-                console.error("Error al cerrar sesión:", error);
-            });
-    });
-
-    // Observador de estado de autenticación
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            // Usuario ha iniciado sesión
-            authContainer.classList.add('d-none');
-            catalogContainer.classList.remove('d-none');
-            loginBtn.classList.add('d-none');
-            logoutBtn.classList.remove('d-none');
-            
-            // Cargar catálogo
-            loadCatalog();
-        } else {
-            // Usuario no ha iniciado sesión
-            authContainer.classList.remove('d-none');
-            catalogContainer.classList.add('d-none');
-            loginBtn.classList.remove('d-none');
-            logoutBtn.classList.add('d-none');
-        }
-    });
-
-    // Verificar si el usuario es administrador
-    function checkAdminStatus(userId) {
-        db.collection('users').doc(userId).get()
-            .then((doc) => {
-                if (doc.exists && doc.data().isAdmin) {
-                    // Redirigir a panel de administración si es admin
-                    window.location.href = '/admin/index.html';
-                }
-            })
-            .catch((error) => {
-                console.error("Error verificando estado de admin:", error);
-            });
-    }
-});
+    // Cerrar
