@@ -1,0 +1,53 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.product-img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.card {
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+#authContainer {
+    max-width: 500px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.btn-social {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    width: 100%;
+}
+
+.modal-body img {
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.carousel-item img {
+    height: 400px;
+    object-fit: contain;
+}
+
+#whatsappBtn {
+    background-color: #25D366;
+    border-color: #25D366;
+}
+
+#whatsappBtn:hover {
+    background-color: #128C7E;
+    border-color: #128C7E;
+}
