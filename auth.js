@@ -118,4 +118,51 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Cerrar
+    // Cerrar sesión
+    logoutBtn.addEventListener('click', function() {
+        firebase.auth().signOut()
+            .then(() => {
+                window.location.reload();
+            })
+            .catch((error) => {
+                console.error("Error al cerrar sesión:", error);
+                alert("Error al cerrar sesión: " + error.message);
+            });
+    });
+
+    // Observador de estado de autenticación
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            // Usuario ha iniciado sesión
+            authContainer.classList.add('d-none');
+            catalogContainer.classList.remove('d-none');
+            loginBtn.classList.add('d-none');
+            logoutBtn.classList.remove('d-none');
+            
+            // Cargar catálogo
+            if (typeof loadCatalog === 'function') {
+                loadCatalog();
+            }
+        } else {
+            // Usuario no ha iniciado sesión
+            authContainer.classList.remove('d-none');
+            catalogContainer.classList.add('d-none');
+            loginBtn.classList.remove('d-none');
+            logoutBtn.classList.add('d-none');
+        }
+    });
+
+    // Verificar si el usuario es administrador
+    function checkAdminStatus(userId) {
+        db.collection('users').doc(userId).get()
+            .then((doc) => {
+                if (doc.exists && doc.data().isAdmin) {
+                    // Redirigir a panel de administración si es admin
+                    window.location.href = 'admin/index.html';
+                }
+            })
+            .catch((error) => {
+                console.error("Error verificando estado de admin:", error);
+            });
+    }
+});
